@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="{{ url_for('static', filename='RecipeStyles.css') }}">
+        <title>Chicken Recipe</title>
+    </head>
+
+    <body>
+        <a href="{{ url_for('index') }}">Back to home</a>
+        <h1 class="RecipeTitle">Unbelievable Chicken</h1>
+        <img class="image" src="{{ url_for('static', filename='images/UChickenImg.jpg') }}" alt="Picture of Unbelievable Chicken">
+        
+        <h2 class="description">Description</h2>
+        <p class="description">This is how to make an Unbelievable Chicken</p>
+
+        <h2 class="ingredients">Ingredients Needed:</h2>
+        <ul class="ingredients">
+            <li>¼ cup cider vinegar</li>
+            <li>3 tablespoons prepared coarse-ground mustard or to taste</li>
+            <li>3 cloves garlic, peeled and minced</li>
+            <li>1 lime, juiced</li>
+            <li>½ cup brown sugar or to taste</li>
+            <li>1 ½ teaspoons salt or to taste</li>
+            <li>ground black pepper to taste</li>
+            <li>6 tablespoons olive oil</li>
+            <li>6 skinless, boneless chicken breast halves</li>
+        </ul>
+
+        <script src="{{ url_for('static', filename='behavior.js') }}"></script>
+
+        <!-- <script>
+        (function () {
+            console.log("Telemetry script loaded");
+        // ----- CONFIG -----
+        
+        const TELEMETRY_ENDPOINT = "/telemetry";   // change this to your backend URL
+        const SEND_ON_INTERVAL_MS = 0;             // set to e.g. 15000 to send every 15s
+
+        // ----- STATE -----
+        const startTime = performance.now();
+        let timeOnPage = 0;
+
+        let mousePathLength = 0;
+        let lastMouseX = null;
+        let lastMouseY = null;
+        let mouseEventCount = 0;
+
+        let clickCount = 0;
+
+        let maxScrollY = 0;
+        let pageHeight = Math.max(
+            document.body.scrollHeight,
+            document.documentElement.scrollHeight
+        );
+
+        let visibilityChanges = 0;
+
+        let firstActionTime = null;       // time to first interaction
+        let firstKeystrokeTime = null;
+        const keystrokeTimestamps = [];   // we store times, not the keys for privacy
+
+        // ----- HELPERS -----
+        function now() {
+            return performance.now();
+        }
+
+        function markFirstAction() {
+            if (firstActionTime === null) {
+            firstActionTime = now() - startTime;
+            }
+        }
+
+        function updateTimeOnPage() {
+            timeOnPage = now() - startTime;
+        }
+
+        function getScrollDepth() {
+            if (pageHeight <= 0) return 0;
+            const viewportHeight = window.innerHeight + document.documentElement.clientHeight;
+            const maxReachable = pageHeight - viewportHeight;
+            if (maxReachable <= 0) return 1; // single-screen page
+            return Math.min(1, maxScrollY / maxReachable);
+        }
+
+        function getKeystrokeIntervals() {
+            const intervals = [];
+            for (let i = 1; i < keystrokeTimestamps.length; i++) {
+            intervals.push(keystrokeTimestamps[i] - keystrokeTimestamps[i - 1]);
+            }
+            return intervals;
+        }
+
+        function collectTelemetry() {
+            updateTimeOnPage();
+
+            return {
+            page_url: location.href,
+            referrer: document.referrer || null,
+
+            time_on_page_ms: Math.round(timeOnPage),
+            time_to_first_action_ms: firstActionTime !== null ? Math.round(firstActionTime) : null,
+            time_to_first_keystroke_ms: firstKeystrokeTime !== null ? Math.round(firstKeystrokeTime) : null,
+
+            mouse_path_length_px: Math.round(mousePathLength),
+            mouse_event_count: mouseEventCount,
+            click_count: clickCount,
+
+            scroll_depth: getScrollDepth(),        // 0..1
+            max_scroll_y: maxScrollY,
+            page_height: pageHeight,
+
+            visibility_changes: visibilityChanges,
+
+            keystroke_count: keystrokeTimestamps.length,
+            keystroke_intervals_ms: getKeystrokeIntervals(),  // array of numbers
+            user_agent: navigator.userAgent,
+            timestamp_ms: Date.now()
+            };
+        }
+
+        function sendTelemetry(reason) {
+            const payload = collectTelemetry();
+            payload.send_reason = reason;
+
+            // Optional: don’t send for extremely short visits
+            if (payload.time_on_page_ms < 200 && payload.click_count === 0 &&
+                payload.keystroke_count === 0 && payload.mouse_event_count < 3) {
+            return;
+            }
+
+            // Use navigator.sendBeacon if available (better for unload)
+            const body = JSON.stringify(payload);
+
+            if (navigator.sendBeacon && reason === "unload") {
+            navigator.sendBeacon(TELEMETRY_ENDPOINT, body);
+            } else {
+            fetch(TELEMETRY_ENDPOINT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                keepalive: true,
+                body
+            }).catch(() => {
+                // ignore errors for telemetry
+            });
+            }
+        }
+
+        // ----- EVENT LISTENERS -----
+
+        // Mouse move
+        window.addEventListener("mousemove", (e) => {
+            markFirstAction();
+            mouseEventCount++;
+
+            if (lastMouseX !== null && lastMouseY !== null) {
+            const dx = e.clientX - lastMouseX;
+            const dy = e.clientY - lastMouseY;
+            mousePathLength += Math.sqrt(dx * dx + dy * dy);
+            }
+
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        // Clicks
+        window.addEventListener("click", () => {
+            markFirstAction();
+            console.log("Clicked");
+            clickCount++;
+        });
+
+        // Scroll
+        window.addEventListener("scroll", () => {
+            markFirstAction();
+            const y = window.scrollY + window.pageYOffset + document.documentElement.scrollTop || 0;
+            if (y > maxScrollY) {
+            maxScrollY = y;
+            }
+            console.log("Scrolled");
+        }, { passive: true });
+
+
+        // Visibility changes (tab focus/blur)
+        document.addEventListener("visibilitychange", () => {
+            visibilityChanges++;
+        });
+
+        // Keystrokes (timing only, no key content)
+        window.addEventListener("keydown", () => {
+            markFirstAction();
+            const t = now() - startTime;
+            if (firstKeystrokeTime === null) {
+            firstKeystrokeTime = t;
+            }
+            keystrokeTimestamps.push(t);
+        });
+
+        // Send on unload / navigation away
+        window.addEventListener("beforeunload", () => {
+            sendTelemetry("unload");
+        });
+
+        // Optional: send periodically as well
+        if (SEND_ON_INTERVAL_MS && SEND_ON_INTERVAL_MS > 0) {
+            setInterval(() => {
+            sendTelemetry("interval");
+            }, SEND_ON_INTERVAL_MS);
+        }
+
+        // You can also expose a global function to send manually (e.g. on form submit)
+        window.sendBehaviourTelemetry = function (reason = "manual") {
+            sendTelemetry(reason);
+        };
+        })();
+        </script> -->
+    </body>
+</html>
